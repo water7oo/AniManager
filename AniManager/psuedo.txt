@@ -1,0 +1,47 @@
+
+
+- Add failsafes so that the software doesnt crash!
+
+- change directory input fields to drag and drop graphic
+    - dragging any file links back to where it came from (directory)
+
+
+- add ability to drag folders
+
+- break up other widgets into separate py files
+
+
+
+
+
+old json code snippet:
+
+
+       # self.inputJSON = self.findChild(QtWidgets.QLabel, 'inputJSON')
+        # self.fileLabel = self.findChild(QtWidgets.QLabel, 'fileLabel')
+
+        # self.openDir.clicked.connect(self.loadJSON)
+
+
+    # def loadJSON(self):
+
+    #     dialog = QFileDialog(self)
+    #     dialog.setFileMode(QFileDialog.FileMode.ExistingFiles)
+    #     dialog.setViewMode(QFileDialog.ViewMode.List)
+
+
+    #     if dialog.exec_():
+    #         fileNames = dialog.selectedFiles()
+
+    #         if fileNames:
+    #             file_path = fileNames[0]
+
+    #             try:
+    #                 with open(file_path, 'r') as file:
+    #                     data = json.load(file)
+    #                 self.jsonLoaded.emit(data)
+    #                 self.fileLabel.setText(f"Loaded: {Path(file_path).name}")
+    #             except Exception as e:
+    #                 print(f"Error loading JSON: {e}")
+
+    #             self.jsonEditor.setText(str(data))
