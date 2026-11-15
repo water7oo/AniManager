@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QFileDialog, QWidget, QMainWindow, QApplication, QListWidget, QTreeView, QInputDialog, QMessageBox, QVBoxLayout, QFrame
+from PyQt5.QtWidgets import QTableWidgetItem,QFileDialog, QWidget, QMainWindow, QApplication, QListWidget, QTreeView, QInputDialog, QMessageBox, QVBoxLayout, QFrame, QAbstractItemView, QPushButton, QComboBox
 
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtCore import pyqtSignal, Qt, QSettings
@@ -12,7 +12,185 @@ class invoiceGen(QMainWindow):
 
     def __init__(self):
         super(invoiceGen,self).__init__()
-        uic.loadUi('AniManager/invoice.ui', self)
+        invoiceUIPath = os.path.join(os.path.dirname(__file__), 'invoice.ui')
+        uic.loadUi(invoiceUIPath, self)
+
+class workTodo(QMainWindow):
+    def __init__(self):
+        super(workTodo, self).__init__()
+        workToDoUIPath = os.path.join(os.path.dirname(__file__), 'worktodo.ui')
+        uic.loadUi(workToDoUIPath, self)
+
+        self.addCutBtn.clicked.connect(self.addCut)
+        self.removeCutBtn.clicked.connect(self.removeCut)
+        self.bulkAddBtn.clicked.connect(self.bulkAdd)
+        self.removeAllRowsBtn.clicked.connect(self.removeAllRows)
+        self.applyCutsBtn.clicked.connect(self.applyCuts)
+        self.clearAllBtn.clicked.connect(self.clearAll)
+        self.mainTableWidget.itemChanged.connect(self.checkFirstItem)
+
+        self.combo_boxes = []
+
+
+        self.updateButton()
+        self.updateProgress()
+
+    def updateProgress(self):
+        table = self.mainTableWidget
+        rowCount = table.rowCount()
+        self.progressBar.setRange(0, 100)
+        
+        completeCount = 0
+        retakeCount = 0
+        wipCount = 0
+        incompleteCount = 0
+
+        for i in self.combo_boxes:
+            if i.currentText() == 'Complete!':
+                completeCount += 1
+            elif i.currentText() == 'Retake':
+                retakeCount += 1
+            elif i.currentText() == 'WIP':
+                wipCount += 1
+            elif i.currentText() == 'Incomplete':
+                incompleteCount += 1
+
+        finalTally = completeCount + incompleteCount
+
+        if rowCount > 0:
+            workDone = completeCount / rowCount
+            print(workDone)
+            self.progressBar.setValue(int(workDone * 100))
+        else:
+            self.progressBar.setValue(0)
+
+        
+
+
+    def updateButton(self):
+        item = self.mainTableWidget.item(0,0)
+
+        hasText = item is not None and bool(item.text().strip())
+        self.applyCutsBtn.setEnabled(hasText)
+
+    def checkFirstItem(self, item):
+        if item.row() == 0 and item.column() == 0:
+                self.updateButton()
+
+
+
+        
+
+
+    def addCut(self):
+        table = self.mainTableWidget
+        rowCount = table.rowCount()
+        table.insertRow(rowCount)
+
+        comboBox = QComboBox()
+        comboBox.addItems(['Incomplete', 'WIP', 'Retake', 'Complete!'])
+        comboBox.currentIndexChanged.connect(self.updateProgress)
+
+        table.setCellWidget(rowCount, 1, comboBox)
+        self.combo_boxes.append(comboBox)
+        self.updateProgress()
+
+        
+        if rowCount == 0:
+            table.setItem(rowCount, 0, QTableWidgetItem(''))
+        else:
+            prevItem = table.item(rowCount - 1, 0)
+
+            if prevItem is not None and prevItem.text().isdigit():
+                nextVal = int(prevItem.text()) + 1
+                table.setItem(rowCount , 0, QTableWidgetItem('c' + str(nextVal)))
+
+            else:
+                table.setItem(rowCount, 0, QTableWidgetItem(''))
+            
+    def bulkAdd(self):
+        table = self.mainTableWidget
+        rowCount = table.rowCount()
+        cutAmount = self.cutAmountEntry.value()
+        startingCut = self.startingCutEntry.value()
+
+        startingRow = table.rowCount()
+
+
+
+        if startingCut != 0:
+            defaultVal = startingCut
+        else:
+            defaultVal = 1
+
+        if startingRow > 0:
+            prevItem = table.item(startingRow - 1, 0)
+            if prevItem is None:
+                if prevItem.text().isdigit():
+                    defaultVal = int(prevItem.text()) + 1
+                else:
+                    defaultVal = startingCut
+            else:
+                defaultVal = startingCut
+
+        table.setRowCount(startingRow + cutAmount)
+
+
+
+        for i in range(cutAmount):
+            comboBox = QComboBox()
+            comboBox.addItems(['Incomplete', 'WIP', 'Retake', 'Complete!'])
+            comboBox.currentIndexChanged.connect(self.updateProgress)
+
+            table.setCellWidget(i, 1, comboBox)
+            self.combo_boxes.append(comboBox)
+            self.updateProgress()
+            
+            currVal = defaultVal + i
+            table.setItem(startingRow + i, 0, QTableWidgetItem('c' +  str(currVal)))
+
+
+    def removeCut(self):
+        table = self.mainTableWidget
+        rowCount = table.rowCount()
+        if rowCount > 0:
+            table.removeRow(rowCount - 1)
+
+    def removeAllRows(self):
+        table = self.mainTableWidget
+        rowCount = table.rowCount()
+
+        table.setRowCount(0)
+        
+    def applyCuts(self):
+        table = self.mainTableWidget
+        rowCount = table.rowCount()
+        startingVal = int((table.item(0,0).text()).split('c')[1])
+        print(startingVal)
+
+        for i in range(rowCount):
+
+            if startingVal != '':
+                table.setItem(i, 0, QTableWidgetItem('c' + str(i + startingVal)))
+                
+
+    def clearAll(self):
+        table = self.mainTableWidget
+        rowCount = table.rowCount()
+
+        for i in range(rowCount):
+            table.setItem(i, 0, QTableWidgetItem('c0'))
+        
+
+
+
+
+
+
+        
+
+
+
 
 
 class folderConfig(QMainWindow):
@@ -20,7 +198,8 @@ class folderConfig(QMainWindow):
 
     def __init__(self):
         super(folderConfig,self).__init__()
-        uic.loadUi('AniManager/folderLoader.ui',self)
+        folderLoaderUIPath = os.path.join(os.path.dirname(__file__), 'folderLoader.ui')
+        uic.loadUi(folderLoaderUIPath,self)
         self.setWindowTitle('Configure Work Folder')
         # self.setWindowIcon(QIcon())
         
@@ -124,7 +303,8 @@ class folderConfig(QMainWindow):
 
                     if os.path.isdir(source_path):
 
-                        target_path = os.path.join(work_dir, projectName, episodeNum)
+                        # if episode only is checked then take off project name, if not then do with project name
+                        target_path = os.path.join(work_dir, projectName, '#' + episodeNum)
                         shutil.copytree(source_path, target_path, dirs_exist_ok=True)
 
                     else:
@@ -230,11 +410,12 @@ class folderConfig(QMainWindow):
 class mainManager(QMainWindow):
     def __init__(self):
         super(mainManager,self).__init__()
-        uic.loadUi('AniManager/main.ui', self)
+        mainUiPath = os.path.join(os.path.dirname(__file__), 'main.ui')
+        uic.loadUi(mainUiPath, self)
         self.w = None
         self.loaded_json_data = None
         self.setWindowTitle('AniManager')
-        self.setWindowIcon(QIcon('AniManager\winIcon.png'))
+        self.setWindowIcon(QIcon('AniManager/winIcon.png'))
 
         
         self.statusBar = self.statusBar()
@@ -249,6 +430,7 @@ class mainManager(QMainWindow):
  
     
         self.invoiceGenBtn.clicked.connect(self.showInvoiceGen)
+        self.workTDbtn.clicked.connect(self.showWorkTodo)
         self.folderConfigBtn.clicked.connect(self.showFolderConfig)
 
 
@@ -267,7 +449,10 @@ class mainManager(QMainWindow):
         self.w.show()
         print("Initializing Folder config")
 
-
+    def showWorkTodo(self,  checked):
+        self.w = workTodo()
+        self.w.show()
+        print('initializing work to do')
 
     # while loop is preventing the rest of the program from loading
     def convertDisplayTime(self):
